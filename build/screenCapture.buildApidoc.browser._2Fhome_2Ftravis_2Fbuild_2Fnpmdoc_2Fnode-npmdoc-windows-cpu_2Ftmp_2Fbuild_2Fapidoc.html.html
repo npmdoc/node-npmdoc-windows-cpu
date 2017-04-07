@@ -1,0 +1,385 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/KyleRoss/windows-cpu">windows-cpu (v0.1.4)</a>
+</h1>
+<h4>CPU monitoring utilities for Node.js apps on Windows.</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.windows-cpu">module windows-cpu</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.cpuInfo">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>cpuInfo
+            <span class="apidocSignatureSpan">(cb)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.findLoad">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>findLoad
+            <span class="apidocSignatureSpan">(arg, cb)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.nodeLoad">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>nodeLoad
+            <span class="apidocSignatureSpan">(cb)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.processLoad">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>processLoad
+            <span class="apidocSignatureSpan">(cb)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.totalLoad">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>totalLoad
+            <span class="apidocSignatureSpan">(cb)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.windows-cpu.totalMemoryUsage">
+            function <span class="apidocSignatureSpan">windows-cpu.</span>totalMemoryUsage
+            <span class="apidocSignatureSpan">(cb)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.windows-cpu" id="apidoc.module.windows-cpu">module windows-cpu</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.cpuInfo" id="apidoc.element.windows-cpu.cpuInfo">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>cpuInfo
+        <span class="apidocSignatureSpan">(cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function cpuInfo(cb) {
+    if(!isFunction(cb)) cb = emptyFn;
+    if(!checkPlatform(cb)) return;
+
+    execFile(wmic, ['cpu', 'get', 'Name'], function (error, res, stderr) {
+        if(error !== null || stderr) return cb(error || stderr);
+
+        var cpus = res.match(/[^\r\n]+/g).map(function(v) {
+            return v.trim();
+        });
+
+        cpus.shift();
+        cb(null, cpus);
+    });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+cpuInfo(cb)
+-----------
+Gets the name of each processor in the machine.
+
+	var cpu = require('windows-cpu');
+	
+	// Get listing of processors
+	cpu.<span class="apidocCodeKeywordSpan">cpuInfo</span>(function(error, results) {
+		if(error) {
+		return console.log(error);
+		}
+		
+		// results =&gt;
+		// [
+		//    'Intel(R) Xeon(R) CPU E5-2609 0 @ 2.40GHz',
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.findLoad" id="apidoc.element.windows-cpu.findLoad">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>findLoad
+        <span class="apidocSignatureSpan">(arg, cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function findLoad(arg, cb) {
+    if(!isFunction(cb)) cb = emptyFn;
+    if(!checkPlatform(cb)) return;
+
+    var cmd = "wmic path Win32_PerfFormattedData_PerfProc_Process get Name,PercentProcessorTime,IDProcess | findstr /i /c:" + arg
+;
+    exec(cmd, function (error, res, stderr) {
+        if(error !== null || stderr) return cb(error || stderr);
+        if(!res) return cb('Cannot find results for provided arg: ' + arg, { load: 0, results: [] });
+
+        var found = res.replace(/[^\S\n]+/g, ':').replace(/\:\s/g, '|').split('|').filter(function(v) {
+            return !!v;
+        }).map(function(v) {
+            var data = v.split(':');
+            return {
+                pid: +data[0],
+                process: data[1],
+                load: +data[2]
+            };
+        });
+
+        var totalLoad = 0;
+
+        found.forEach(function(obj) {
+            totalLoad += obj.load;
+        });
+
+        var output = {
+            load: totalLoad,
+            found: found
+        };
+
+        cb(null, output);
+    });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+findLoad(arg, cb)
+---------------
+Gets the total load in percent for process(es) by a specific search parameter.
+
+	var cpu = require('windows-cpu');
+
+ // Find the total load for "chrome" processes
+ cpu.<span class="apidocCodeKeywordSpan">findLoad</span>('chrome', function(error, results) {
+      if(error) {
+          return console.log(error);
+      }
+
+      // results =&gt;
+      // {
+      //    load: 8,
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.nodeLoad" id="apidoc.element.windows-cpu.nodeLoad">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>nodeLoad
+        <span class="apidocSignatureSpan">(cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function nodeLoad(cb) {
+    findLoad('node', cb);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+nodeLoad(cb)
+------------
+Gets the total load in percent for all Node.js processes running on the current machine.
+
+	var cpu = require('windows-cpu');
+	
+	// Get total load for all node processes
+	cpu.<span class="apidocCodeKeywordSpan">nodeLoad</span>(function(error, results) {
+		if(error) {
+		return console.log(error);
+		}
+		
+		// results =&gt;
+		// {
+		//    load: 20,
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.processLoad" id="apidoc.element.windows-cpu.processLoad">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>processLoad
+        <span class="apidocSignatureSpan">(cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function processLoad(cb) {
+    findLoad(process.pid, cb);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+processLoad(cb)
+---------------
+Gets the total load in percent for all processes running on the current machine per CPU.
+
+	var cpu = require('windows-cpu');
+	
+	// Get load for current running node process
+	cpu.<span class="apidocCodeKeywordSpan">processLoad</span>(function(error, results) {
+		if(error) {
+		return console.log(error);
+		}
+		
+		// results =&gt;
+		// {
+		//    load: 10,
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.totalLoad" id="apidoc.element.windows-cpu.totalLoad">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>totalLoad
+        <span class="apidocSignatureSpan">(cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function totalLoad(cb) {
+    if (!isFunction(cb)) cb = emptyFn;
+    if (!checkPlatform(cb)) return;
+
+    execFile(wmic, ['cpu', 'get', 'loadpercentage'], function (error, res, stderr) {
+        if(error !== null || stderr) return cb(error || stderr);
+
+        var cpus = (res.match(/\d+/g) || []).map(function(x) {
+            return +(x.trim());
+        });
+
+        cb(null, cpus);
+    });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+totalLoad(cb)
+-------------
+Gets the total load in percent for all processes running on the current machine per CPU.
+
+	var cpu = require('windows-cpu');
+	
+	// Get total load on server for each CPU
+	cpu.<span class="apidocCodeKeywordSpan">totalLoad</span>(function(error, results) {
+		if(error) {
+		return console.log(error);
+		}
+		
+		// results (single cpu in percent) =&gt;
+		// [8]
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.windows-cpu.totalMemoryUsage" id="apidoc.element.windows-cpu.totalMemoryUsage">
+        function <span class="apidocSignatureSpan">windows-cpu.</span>totalMemoryUsage
+        <span class="apidocSignatureSpan">(cb)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function totalMemoryUsage(cb) {
+    if (!isFunction(cb)) cb = emptyFn;
+    if (!checkPlatform(cb)) return;
+
+    var cmd = "tasklist /FO csv /nh";
+    exec(cmd, function (error, res, stderr) {
+        if(error !== null || stderr) return cb(error || stderr);
+        var results = { usageInKb: 0 , usageInMb: 0 , usageInGb: 0 };
+
+        results.usageInKb = res.match(/[^\r\n]+/g).map(function(v) {
+            var amt = +v.split('","')[4].replace(/[^\d]/g, '');
+            return (!isNaN(amt) &amp;&amp; typeof amt === 'number')? amt : 0;
+        }).reduce(function(prev, current) {
+            return prev + current;
+        });
+
+        results.usageInMb = results.usageInKb / 1024;
+        results.usageInGb = results.usageInMb / 1024;
+
+        cb(null, results);
+    });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+totalMemoryUsage(cb)
+--------------------
+Gets the total memory usage value in KB , MB and GB .
+
+ var cpu = require('windows-cpu');
+
+ // Get the memory usage
+ cpu.<span class="apidocCodeKeywordSpan">totalMemoryUsage</span>(function(error, results) {
+      if(error) {
+          return console.log(error);
+      }
+
+      // results =&gt;
+      // {
+      //    usageInKb: 3236244,
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
